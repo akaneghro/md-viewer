@@ -22,6 +22,7 @@ Cross-platform desktop Markdown (.md) viewer built with **Tauri v2 + Nuxt 4 (SPA
 ### Layout
 
 Two-column layout:
+
 - **Left sidebar**: Recent files list + Table of Contents (when a document is open)
 - **Right panel**: Rendered Markdown preview
 - **Top bar**: "Open..." button + current file name + dark mode toggle
@@ -30,15 +31,15 @@ Two-column layout:
 
 - `open_markdown_file()`: Opens native file dialog (`.md` filter), returns `{ path, content }`
 - `read_file(path)`: Reads a file by path (for reopening recents)
-- `start_watch(path)` *(optional)*: Emits events to frontend on file changes
+- `start_watch(path)` _(optional)_: Emits events to frontend on file changes
 
 ### Frontend Components
 
-| Component | Responsibility |
-|---|---|
+| Component        | Responsibility                                                                  |
+| ---------------- | ------------------------------------------------------------------------------- |
 | `MarkdownViewer` | Renders sanitized HTML via `v-html`, intercepts `<a>` clicks for external links |
-| `RecentFiles` | Lists recent files, click to reopen |
-| `Toc` | Lists h1-h3 headings, click to `scrollIntoView` |
+| `RecentFiles`    | Lists recent files, click to reopen                                             |
+| `Toc`            | Lists h1-h3 headings, click to `scrollIntoView`                                 |
 
 ### Composable: `useDocument()`
 
@@ -65,7 +66,7 @@ renderMarkdownToHtml(markdown, fileDir): { html, toc }
 4. **TOC sidebar**: Extracted from h1-h3 headings with scroll-to-section
 5. **Relative images**: Resolved via Tauri's `convertFileSrc` relative to the file's directory
 6. **External links**: Opened in system browser via `shell.open`
-7. **File watching** *(nice to have)*: Auto-refresh on disk changes, encapsulated behind a feature flag
+7. **File watching** _(nice to have)_: Auto-refresh on disk changes, encapsulated behind a feature flag
 8. **Dark mode**: Light by default, toggle in top bar
 
 ## Security Rules
@@ -87,20 +88,51 @@ renderMarkdownToHtml(markdown, fileDir): { html, toc }
 
 ### Target bundles
 
-| Platform | Formats |
-|---|---|
-| Windows | `.msi`, `.exe` |
-| macOS | `.app`, `.dmg` |
-| Linux | `.AppImage`, `.deb` |
+| Platform | Formats             |
+| -------- | ------------------- |
+| Windows  | `.msi`, `.exe`      |
+| macOS    | `.app`, `.dmg`      |
+| Linux    | `.AppImage`, `.deb` |
 
 ### Icons
 
 Provide PNGs in `src-tauri/icons/` at 512x512, 256x256, 128x128, 32x32.
+
+## Git Workflow
+
+### Branching Model
+
+- **`main`** — always stable, represents the latest functional version. Never commit directly.
+- **`feat/xxx`** — one branch per feature or task
+- **`fix/xxx`** — one branch per bugfix
+
+No `develop` or `staging` branches needed.
+
+### Workflow for Claude
+
+1. For every task, create a branch from `main` (`feat/short-name` or `fix/short-name`)
+2. Work there with granular conventional commits
+3. Notify when ready; user decides to merge or review first
+4. Delete the feature branch after merge
+
+### Worktrees
+
+Only use worktrees when working on parallel tasks simultaneously. Example:
+
+```
+git worktree add ../markdown-viewer-feat-x feat/feature-x
+```
+
+For sequential tasks, stay in the main working directory.
+
+### Tags
+
+Use semver tags (`v0.1.0`, `v0.2.0`, etc.) to mark release milestones.
 
 ## Conventions
 
 - UI language: English
 - App display name: **"MD Viewer"**
 - Use `unknown` instead of `any` in TypeScript
-- Follow conventional commits (`feat:`, `fix:`, `docs:`)
+- Follow conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`)
 - Run `pnpm run typecheck && pnpm run lint` before committing
