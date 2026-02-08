@@ -1,0 +1,10 @@
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "exclude": [
+    "src-tauri",
+    "dist",
+    ".data",
+    ".output",
+    "node_modules"
+  ]
+}

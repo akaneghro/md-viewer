@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Nuxt build/dev
+.nuxt/
+.output/
+dist/
+
+# Tauri build
+src-tauri/target/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Claude Code
+.claude/
+
+# MCP config (may contain API keys)
+.mcp.json
+
+# Vitest
+coverage/
+
+# Misc
+nul
+*.log
