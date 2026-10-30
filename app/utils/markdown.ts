@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import remarkRehype from 'remark-rehype'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import rehypeStringify from 'rehype-stringify'
-import { visit } from 'unist-util-visit'
+import { SKIP, visit } from 'unist-util-visit'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import type { Element, Root } from 'hast'
 import type { Plugin } from 'unified'
@@ -260,82 +260,66 @@ async function getHighlighter() {
   return shikiHighlighter
 }
 
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: '\'',
+const LANG_ALIASES: Record<string, string> = {
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  rb: 'ruby',
+  sh: 'bash',
+  zsh: 'bash',
+  yml: 'yaml',
 }
 
-// Decode the entities rehype-stringify emits (named and numeric, e.g. `&#x3C;`) in one pass
-export function decodeHtmlEntities(text: string): string {
-  return text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, body: string) => {
-    if (body[0] !== '#') return NAMED_ENTITIES[body.toLowerCase()] ?? entity
-    const isHex = body[1] === 'x' || body[1] === 'X'
-    const codePoint = Number.parseInt(body.slice(isHex ? 2 : 1), isHex ? 16 : 10)
-    return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : entity
-  })
+type Highlighter = Awaited<ReturnType<typeof getHighlighter>>
+
+// Language from a code block's `language-xxx` class, or 'text'
+function codeLanguage(code: Element): string {
+  const classes = code.properties?.className
+  const languageClass = (Array.isArray(classes) ? classes : [])
+    .map(String)
+    .find(name => name.startsWith('language-'))
+  return languageClass?.slice('language-'.length) || 'text'
 }
 
-// Highlight code blocks with Shiki (post-process)
-async function highlightCodeBlocks(
-  html: string,
-  isDark: boolean,
-): Promise<string> {
-  const highlighter = await getHighlighter()
+// Plugin to highlight code blocks with Shiki. It runs on the sanitized tree, so neither
+// the code nor its fence info string is ever parsed as markup.
+function rehypeHighlightCode(highlighter: Highlighter, isDark: boolean): Plugin<[], Root> {
   const theme = isDark ? 'github-dark' : 'github-light'
+  const loadedLangs = highlighter.getLoadedLanguages()
 
-  // Match <pre><code class="language-xxx">...</code></pre>
-  const codeBlockRegex
-    = /<pre><code(?:\s+class="language-(\w+)")?>([\s\S]*?)<\/code><\/pre>/g
-
-  const langAliases: Record<string, string> = {
-    js: 'javascript',
-    ts: 'typescript',
-    py: 'python',
-    rb: 'ruby',
-    sh: 'bash',
-    zsh: 'bash',
-    yml: 'yaml',
-  }
-
-  const matches: { full: string, lang: string, code: string }[] = []
-  let match: RegExpExecArray | null
-
-  while ((match = codeBlockRegex.exec(html)) !== null) {
-    matches.push({
-      full: match[0],
-      lang: match[1] || 'text',
-      code: match[2]!,
-    })
-  }
-
-  let result = html
-  for (const m of matches) {
-    let lang = langAliases[m.lang] || m.lang
-
-    const code = decodeHtmlEntities(m.code)
-
-    try {
-      const loadedLangs = highlighter.getLoadedLanguages()
-      if (!loadedLangs.includes(lang as never)) {
-        lang = 'text'
+  return () => (tree: Root) => {
+    visit(tree, 'element', (node: Element, index, parent) => {
+      const code = node.children[0]
+      if (
+        node.tagName !== 'pre'
+        || node.children.length !== 1
+        || code?.type !== 'element'
+        || code.tagName !== 'code'
+        || !parent
+        || index === undefined
+      ) {
+        return
       }
 
-      const highlighted = highlighter.codeToHtml(code, { lang, theme })
-      // Replacer function so `$&`, `$'`, etc. in the code are not treated as patterns
-      result = result.replace(
-        m.full,
-        () => `<div class="shiki-container">${highlighted}</div>`,
-      )
-    }
-    catch {
-      // Keep original if highlighting fails
-    }
-  }
+      const requested = codeLanguage(code)
+      const alias = LANG_ALIASES[requested] || requested
+      const lang = loadedLangs.includes(alias as never) ? alias : 'text'
 
-  return result
+      try {
+        const highlighted = highlighter.codeToHast(extractText(code), { lang, theme })
+        parent.children[index] = {
+          type: 'element',
+          tagName: 'div',
+          properties: { className: ['shiki-container'] },
+          children: highlighted.children.filter(child => child.type === 'element'),
+        }
+        return SKIP
+      }
+      catch {
+        // Keep the plain code block if highlighting fails
+      }
+    })
+  }
 }
 
 export async function renderMarkdown(
@@ -344,6 +328,7 @@ export async function renderMarkdown(
   isDark: boolean = false,
 ): Promise<MarkdownResult> {
   const toc: TocItem[] = []
+  const highlighter = await getHighlighter()
 
   const processor = unified()
     .use(remarkParse)
@@ -353,16 +338,13 @@ export async function renderMarkdown(
     .use(rehypeResolveImages(fileDir))
     .use(rehypeExternalLinks)
     .use(rehypeSanitize, sanitizeSchema)
+    .use(rehypeHighlightCode(highlighter, isDark))
     .use(rehypeStringify)
 
   const result = await processor.process(content)
-  let html = String(result)
-
-  // Apply Shiki highlighting
-  html = await highlightCodeBlocks(html, isDark)
 
   return {
-    html,
+    html: String(result),
     toc,
   }
 }

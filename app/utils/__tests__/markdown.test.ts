@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import {
-  decodeHtmlEntities,
   isExternalHref,
   isPathInside,
   normalizePath,
@@ -439,6 +438,17 @@ describe('renderMarkdown', () => {
       expect(result.html).toBeDefined()
     })
 
+    it('should not turn a code fence info string into markup', async () => {
+      const md = '~~~<pre><code>y</code></pre><img/src=x/onerror=alert(1)><a href=file:///c:/x>z</a>\nhello\n~~~'
+      const result = await renderMarkdown(md)
+      const container = window.document.createElement('div')
+      container.innerHTML = result.html
+
+      expect(container.querySelectorAll('img, a')).toHaveLength(0)
+      expect(container.querySelectorAll('pre')).toHaveLength(1)
+      expect(container.textContent).toBe('hello\n')
+    })
+
     it('should preserve class attributes on code and span', async () => {
       // Code blocks get class="language-xxx" which should be preserved
       const md = '```javascript\ncode\n```'
@@ -473,21 +483,6 @@ describe('normalizePath', () => {
 
   it('should keep the root of UNC paths', () => {
     expect(normalizePath('\\\\server\\share\\docs')).toBe('//server/share/docs')
-  })
-})
-
-describe('decodeHtmlEntities', () => {
-  it('should decode named, decimal and hex entities', () => {
-    expect(decodeHtmlEntities('&lt;a&gt; &amp; &quot;&apos; &#39; &#x3C; &#X26;'))
-      .toBe('<a> & "\' \' < &')
-  })
-
-  it('should decode in a single pass', () => {
-    expect(decodeHtmlEntities('&amp;lt; &#x26;#x26;')).toBe('&lt; &#x26;')
-  })
-
-  it('should leave unknown or invalid entities untouched', () => {
-    expect(decodeHtmlEntities('&nbsp2; &unknown; &#x110000;')).toBe('&nbsp2; &unknown; &#x110000;')
   })
 })
 
