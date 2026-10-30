@@ -98,7 +98,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org) 22+
+- [Node.js](https://nodejs.org) 22.22.3+ or 24.15+
 - [pnpm](https://pnpm.io) 10 (`corepack enable` picks the version pinned in `package.json`)
 - [Rust](https://www.rust-lang.org/tools/install) stable (1.90+)
 - The Tauri system dependencies for your OS: see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)

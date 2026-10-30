@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Upgraded to Nuxt 4, Tailwind CSS 4, Pinia 4, Shiki 4, Vitest 5, TypeScript 6 and
-  Tauri 2.12. Building from source now needs Node.js 22+ and Rust 1.90+.
+  Tauri 2.12. Building from source now needs Node.js 22.22.3+ (or 24.15+) and Rust 1.90+.
 - Replaced the deprecated Tauri shell plugin with the opener plugin for external links.
 - New app identifier `io.github.akaneghro.mdviewer`. Recent files and the theme
   choice from 0.1.0 are not carried over.

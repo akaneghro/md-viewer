@@ -10,7 +10,7 @@ Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Development setup
 
-You need Node.js 22+, pnpm 10, Rust stable and the
+You need Node.js 22.22.3+ or 24.15+, pnpm 10, Rust stable and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ```bash

@@ -12,7 +12,7 @@ Public repo: <https://github.com/akaneghro/md-viewer> (MIT).
 - **Styling**: Tailwind CSS 4 via `@tailwindcss/vite`, CSS-first config in `app/assets/css/main.css`
   (`primary-*` palette, class-based `dark` variant). No component libraries
 - **Markdown**: unified (remark-parse, remark-gfm, remark-rehype, rehype-sanitize, rehype-stringify) + Shiki
-- **Tooling**: pnpm 10 (pinned in `packageManager`), Node 22+, ESLint (`@nuxt/eslint`, stylistic), vue-tsc, Vitest + happy-dom
+- **Tooling**: pnpm 10 (pinned in `packageManager`), Node 22.22.3+ or 24.15+, ESLint (`@nuxt/eslint`, stylistic), vue-tsc, Vitest + happy-dom
 
 ## Scripts
 
