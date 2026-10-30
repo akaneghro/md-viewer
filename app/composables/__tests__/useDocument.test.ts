@@ -332,6 +332,37 @@ describe('useDocument', () => {
       expect(doc.editContent.value).toBe('')
       expect(doc.content.value).toBe('second')
     })
+
+    it('should leave a clean editor when opening another file fails', async () => {
+      vi.mocked(stat).mockResolvedValue({ size: 100 } as unknown as Awaited<ReturnType<typeof stat>>)
+      vi.mocked(readTextFile).mockResolvedValue('first')
+      await doc.openPath('/first.md')
+      doc.startEditing()
+
+      vi.mocked(stat).mockResolvedValue({
+        size: 20 * 1024 * 1024,
+      } as unknown as Awaited<ReturnType<typeof stat>>)
+      await expect(doc.openPath('/huge.md')).rejects.toThrow('File too large')
+
+      // So the error panel shows instead of the editor
+      expect(doc.isEditing.value).toBe(false)
+      expect(doc.editContent.value).toBe('')
+      expect(doc.error.value).toContain('too large')
+      expect(doc.content.value).toBe('first')
+    })
+
+    it('should keep unsaved edits when opening another file fails', async () => {
+      vi.mocked(readTextFile).mockResolvedValue('first')
+      await doc.openPath('/first.md')
+      doc.startEditing()
+      doc.updateEditContent('unsaved')
+
+      vi.mocked(readTextFile).mockRejectedValue(new Error('Permission denied'))
+      await expect(doc.openPath('/second.md')).rejects.toThrow()
+
+      expect(doc.isEditing.value).toBe(true)
+      expect(doc.editContent.value).toBe('unsaved')
+    })
   })
 
   // --- fileName computed ---
@@ -364,6 +395,18 @@ describe('useDocument', () => {
       vi.mocked(readTextFile).mockResolvedValue('x')
       await doc.openPath('/path/to/readme.md')
       expect(doc.fileDir.value).toBe('/path/to')
+    })
+
+    it('should keep the root for a document at the POSIX root', async () => {
+      vi.mocked(readTextFile).mockResolvedValue('x')
+      await doc.openPath('/README.md')
+      expect(doc.fileDir.value).toBe('/')
+    })
+
+    it('should compute directory from a Windows drive root', async () => {
+      vi.mocked(readTextFile).mockResolvedValue('x')
+      await doc.openPath('C:\\README.md')
+      expect(doc.fileDir.value).toBe('C:')
     })
   })
 

@@ -33,7 +33,8 @@ const fileDir = computed(() => {
   if (!state.currentPath) return null
   const parts = state.currentPath.split(/[/\\]/)
   parts.pop()
-  return parts.join('/')
+  // A document at the POSIX root ('/README.md') leaves only the empty root segment
+  return parts.join('/') || (state.currentPath.startsWith('/') ? '/' : '')
 })
 
 let editRenderTimeout: ReturnType<typeof setTimeout> | null = null
@@ -177,6 +178,13 @@ export function useDocument() {
     catch (err) {
       if (!(err instanceof Error && err.message === 'File too large')) {
         state.error = `Failed to open file: ${err}`
+      }
+      // The error panel only shows outside edit mode. Callers already confirmed
+      // discarding unsaved edits, so only a clean editor is left here.
+      if (!state.isDirty) {
+        clearEditTimeout()
+        state.isEditing = false
+        state.editContent = ''
       }
       throw err
     }
