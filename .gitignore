@@ -8,6 +8,7 @@ dist/
 
 # Tauri build
 src-tauri/target/
+/src-tauri/gen/schemas
 
 # Environment variables
 .env
@@ -35,5 +36,4 @@ Desktop.ini
 coverage/
 
 # Misc
-nul
 *.log
