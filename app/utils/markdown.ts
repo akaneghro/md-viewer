@@ -150,16 +150,15 @@ function safeDecodeUri(uri: string): string {
 // Plugin to resolve relative image paths
 function rehypeResolveImages(fileDir: string | null): Plugin<[], Root> {
   return () => (tree: Root) => {
-    if (!fileDir) return
-
-    const normalizedDir = normalizePath(fileDir.replace(/\\/g, '/'))
+    const normalizedDir = fileDir ? normalizePath(fileDir) : null
 
     visit(tree, 'element', (node: Element) => {
       if (node.tagName === 'img' && node.properties?.src) {
         const src = String(node.properties.src)
 
-        // Only allow http(s) URLs for remote images
-        if (src.startsWith('http://') || src.startsWith('https://')) {
+        // Remote images load over HTTPS only. Plain http:// falls through to the scheme
+        // check below: it would also reach the asset protocol (http://asset.localhost).
+        if (src.startsWith('https://')) {
           return
         }
 
@@ -177,6 +176,9 @@ function rehypeResolveImages(fileDir: string | null): Plugin<[], Root> {
           node.properties.src = ''
           return
         }
+
+        // Relative images need the document's folder
+        if (!normalizedDir) return
 
         // Resolve relative to the document, normalizing any . and .. segments
         const separator = normalizedDir.endsWith('/') ? '' : '/'

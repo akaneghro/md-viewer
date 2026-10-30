@@ -202,7 +202,7 @@ describe('renderMarkdown', () => {
 
   // --- Image resolution ---
   describe('image resolution', () => {
-    it('should keep http images as-is', async () => {
+    it('should keep https images as-is', async () => {
       const result = await renderMarkdown(
         '![img](https://example.com/img.png)',
         '/dir',
@@ -210,12 +210,13 @@ describe('renderMarkdown', () => {
       expect(result.html).toContain('src="https://example.com/img.png"')
     })
 
-    it('should keep http:// images as-is', async () => {
+    it.each([null, '/dir'])('should block http:// images (fileDir %s)', async (fileDir) => {
       const result = await renderMarkdown(
-        '![img](http://example.com/img.png)',
-        '/dir',
+        '![a](http://example.com/img.png) ![b](http://asset.localhost/%5C%5Chost%5Cshare%5Cx.png)',
+        fileDir,
       )
-      expect(result.html).toContain('src="http://example.com/img.png"')
+      expect(result.html).not.toContain('http')
+      expect(result.html.match(/src=""/g)).toHaveLength(2)
     })
 
     it('should resolve relative images with convertFileSrc', async () => {
