@@ -98,9 +98,17 @@ function rehypeHeadingIds(toc: TocItem[]): Plugin<[], Root> {
   }
 }
 
-// Normalize a path by resolving . and .. segments
-function normalizePath(path: string): string {
-  const parts = path.replace(/\\/g, '/').split('/')
+/** Schemes opened with the system browser / mail client instead of the WebView */
+export function isExternalHref(href: string): boolean {
+  return href.startsWith('http://')
+    || href.startsWith('https://')
+    || href.startsWith('mailto:')
+}
+
+// Normalize a path to forward slashes, resolving . and .. segments
+export function normalizePath(path: string): string {
+  const slashed = path.replace(/\\/g, '/')
+  const parts = slashed.split('/')
   const resolved: string[] = []
   for (const part of parts) {
     if (part === '.' || part === '') continue
@@ -111,9 +119,32 @@ function normalizePath(path: string): string {
       resolved.push(part)
     }
   }
-  // Preserve leading slash for absolute paths
-  const prefix = path.startsWith('/') ? '/' : ''
+  // Preserve the root of absolute and UNC (//server/share) paths
+  const prefix = slashed.startsWith('//') ? '//' : slashed.startsWith('/') ? '/' : ''
   return prefix + resolved.join('/')
+}
+
+// Windows paths (drive letter or UNC) are case-insensitive
+function isWindowsPath(path: string): boolean {
+  return /^[a-z]:/i.test(path) || path.startsWith('//')
+}
+
+/** Whether `path` is inside `dir` (both normalized with `normalizePath`) */
+export function isPathInside(path: string, dir: string): boolean {
+  const base = dir.endsWith('/') ? dir : `${dir}/`
+  if (isWindowsPath(dir)) {
+    return path.toLowerCase().startsWith(base.toLowerCase())
+  }
+  return path.startsWith(base)
+}
+
+function safeDecodeUri(uri: string): string {
+  try {
+    return decodeURIComponent(uri)
+  }
+  catch {
+    return uri
+  }
 }
 
 // Plugin to resolve relative image paths
@@ -132,30 +163,27 @@ function rehypeResolveImages(fileDir: string | null): Plugin<[], Root> {
           return
         }
 
-        // Block data: URIs and other schemes in images
-        if (src.includes(':')) {
+        // Work on the real file path: micromark percent-encodes spaces, backslashes, etc.
+        const relativePath = safeDecodeUri(src)
+
+        // Block data: URIs, other schemes and drive letters in images
+        if (relativePath.includes(':')) {
           node.properties.src = ''
           return
         }
 
-        // Resolve relative path
-        let absolutePath: string
-
-        if (src.startsWith('/')) {
-          absolutePath = src
-        }
-        else if (src.startsWith('./')) {
-          absolutePath = `${normalizedDir}/${src.slice(2)}`
-        }
-        else {
-          absolutePath = `${normalizedDir}/${src}`
+        // Block absolute paths: only images next to the document are allowed
+        if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
+          node.properties.src = ''
+          return
         }
 
-        // Normalize to resolve any .. segments
-        absolutePath = normalizePath(absolutePath)
+        // Resolve relative to the document, normalizing any . and .. segments
+        const separator = normalizedDir.endsWith('/') ? '' : '/'
+        const absolutePath = normalizePath(`${normalizedDir}${separator}${relativePath}`)
 
         // Validate: resolved path must stay within the file's directory
-        if (!absolutePath.startsWith(normalizedDir)) {
+        if (!isPathInside(absolutePath, normalizedDir)) {
           node.properties.src = ''
           return
         }
@@ -174,18 +202,13 @@ const rehypeExternalLinks: Plugin<[], Root> = () => (tree: Root) => {
       const href = String(node.properties.href)
 
       // Whitelist: only allow safe schemes and internal anchors
-      if (
-        !href.startsWith('http://')
-        && !href.startsWith('https://')
-        && !href.startsWith('#')
-        && !href.startsWith('mailto:')
-      ) {
+      if (!isExternalHref(href) && !href.startsWith('#')) {
         node.properties.href = '#'
         return
       }
 
       // Mark external links
-      if (href.startsWith('http://') || href.startsWith('https://')) {
+      if (isExternalHref(href)) {
         node.properties['data-external'] = 'true'
       }
     }
@@ -237,6 +260,24 @@ async function getHighlighter() {
   return shikiHighlighter
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: '\'',
+}
+
+// Decode the entities rehype-stringify emits (named and numeric, e.g. `&#x3C;`) in one pass
+export function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, body: string) => {
+    if (body[0] !== '#') return NAMED_ENTITIES[body.toLowerCase()] ?? entity
+    const isHex = body[1] === 'x' || body[1] === 'X'
+    const codePoint = Number.parseInt(body.slice(isHex ? 2 : 1), isHex ? 16 : 10)
+    return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : entity
+  })
+}
+
 // Highlight code blocks with Shiki (post-process)
 async function highlightCodeBlocks(
   html: string,
@@ -274,13 +315,7 @@ async function highlightCodeBlocks(
   for (const m of matches) {
     let lang = langAliases[m.lang] || m.lang
 
-    // Decode HTML entities
-    const code = m.code
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, '\'')
+    const code = decodeHtmlEntities(m.code)
 
     try {
       const loadedLangs = highlighter.getLoadedLanguages()
@@ -289,9 +324,10 @@ async function highlightCodeBlocks(
       }
 
       const highlighted = highlighter.codeToHtml(code, { lang, theme })
+      // Replacer function so `$&`, `$'`, etc. in the code are not treated as patterns
       result = result.replace(
         m.full,
-        `<div class="shiki-container">${highlighted}</div>`,
+        () => `<div class="shiki-container">${highlighted}</div>`,
       )
     }
     catch {

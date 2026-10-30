@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 
 import {
+  decodeHtmlEntities,
+  isExternalHref,
+  isPathInside,
+  normalizePath,
   renderMarkdown,
 } from '~/utils/markdown'
 
@@ -174,6 +178,11 @@ describe('renderMarkdown', () => {
       expect(result.html).toContain('href="mailto:test@example.com"')
     })
 
+    it('should mark mailto links as external', async () => {
+      const result = await renderMarkdown('[email](mailto:test@example.com)')
+      expect(result.html).toContain('data-external="true"')
+    })
+
     it('should block javascript: links', async () => {
       const result = await renderMarkdown('[xss](javascript:alert(1))')
       expect(result.html).not.toContain('javascript:')
@@ -266,6 +275,62 @@ describe('renderMarkdown', () => {
       )
       expect(result.html).toContain('asset://localhost/')
     })
+
+    it('should resolve images in subfolders and collapse inner .. segments', async () => {
+      const result = await renderMarkdown(
+        '![a](images/a.png) ![b](sub/../b.png)',
+        '/docs',
+      )
+      expect(result.html).toContain('src="asset://localhost/docs/images/a.png"')
+      expect(result.html).toContain('src="asset://localhost/docs/b.png"')
+    })
+
+    it('should block traversal into a sibling folder sharing the prefix', async () => {
+      const result = await renderMarkdown(
+        '![img](../docs-secret/a.png)',
+        '/docs',
+      )
+      expect(result.html).toContain('src=""')
+    })
+
+    it('should block sibling-prefix traversal with Windows paths', async () => {
+      const result = await renderMarkdown(
+        '![img](..\\docs-secret\\a.png)',
+        'C:\\docs',
+      )
+      expect(result.html).toContain('src=""')
+    })
+
+    it('should block absolute paths even inside fileDir', async () => {
+      const result = await renderMarkdown('![img](/docs/image.png)', '/docs')
+      expect(result.html).toContain('src=""')
+    })
+
+    it('should block backslash-rooted and UNC paths', async () => {
+      const result = await renderMarkdown(
+        '![a](\\\\server\\share\\a.png) ![b](\\b.png)',
+        'C:\\docs',
+      )
+      expect(result.html).not.toContain('asset://')
+    })
+
+    it('should resolve percent-encoded image names', async () => {
+      const result = await renderMarkdown('![img](<my image.png>)', '/docs')
+      expect(result.html).toContain('src="asset://localhost/docs/my image.png"')
+    })
+
+    it('should block percent-encoded traversal and drive letters', async () => {
+      const result = await renderMarkdown(
+        '![a](..%2Fsecret.png) ![b](C%3A/secret.png)',
+        '/docs',
+      )
+      expect(result.html).not.toContain('asset://')
+    })
+
+    it('should resolve images for a document at the filesystem root', async () => {
+      const result = await renderMarkdown('![img](image.png)', '/')
+      expect(result.html).toContain('src="asset://localhost/image.png"')
+    })
   })
 
   // --- Code highlighting ---
@@ -307,9 +372,11 @@ describe('renderMarkdown', () => {
     })
 
     it('should decode HTML entities in code', async () => {
-      const md = '```html\n<div>&amp;</div>\n```'
+      const md = '```html\n<div class="a">&amp; \'x\' & é</div>\n```'
       const result = await renderMarkdown(md)
-      expect(result.html).toBeDefined()
+      const container = window.document.createElement('div')
+      container.innerHTML = result.html
+      expect(container.textContent).toContain('<div class="a">&amp; \'x\' & é</div>')
     })
 
     it('should use dark theme when isDark is true', async () => {
@@ -323,6 +390,20 @@ describe('renderMarkdown', () => {
       const result = await renderMarkdown(md, null, false)
       expect(result.html).toContain('shiki-container')
     })
+
+    it.each(['javascript', 'text'])(
+      'should keep $ replacement patterns in code literally (%s)',
+      async (lang) => {
+        const code = 'const a = "$&"; const b = \'$\'\'; const c = `$`` + "$$"'
+        const result = await renderMarkdown(`\`\`\`${lang}\n${code}\n\`\`\``)
+
+        expect(result.html.match(/shiki-container/g)).toHaveLength(1)
+        expect(result.html).not.toContain('<pre><code')
+        const container = window.document.createElement('div')
+        container.innerHTML = result.html
+        expect(container.textContent).toContain(code)
+      },
+    )
   })
 
   // --- Security / sanitization ---
@@ -378,5 +459,76 @@ describe('renderMarkdown', () => {
       const result = await renderMarkdown('Just a paragraph')
       expect(result.toc).toEqual([])
     })
+  })
+})
+
+describe('normalizePath', () => {
+  it('should convert backslashes and resolve . and .. segments', () => {
+    expect(normalizePath('C:\\Users\\docs\\.\\img\\..\\a.png')).toBe('C:/Users/docs/a.png')
+  })
+
+  it('should keep the root of absolute paths', () => {
+    expect(normalizePath('/docs//sub/../a.png')).toBe('/docs/a.png')
+  })
+
+  it('should keep the root of UNC paths', () => {
+    expect(normalizePath('\\\\server\\share\\docs')).toBe('//server/share/docs')
+  })
+})
+
+describe('decodeHtmlEntities', () => {
+  it('should decode named, decimal and hex entities', () => {
+    expect(decodeHtmlEntities('&lt;a&gt; &amp; &quot;&apos; &#39; &#x3C; &#X26;'))
+      .toBe('<a> & "\' \' < &')
+  })
+
+  it('should decode in a single pass', () => {
+    expect(decodeHtmlEntities('&amp;lt; &#x26;#x26;')).toBe('&lt; &#x26;')
+  })
+
+  it('should leave unknown or invalid entities untouched', () => {
+    expect(decodeHtmlEntities('&nbsp2; &unknown; &#x110000;')).toBe('&nbsp2; &unknown; &#x110000;')
+  })
+})
+
+describe('isPathInside', () => {
+  it('should accept paths inside the directory', () => {
+    expect(isPathInside('/docs/a.png', '/docs')).toBe(true)
+    expect(isPathInside('/docs/sub/a.png', '/docs')).toBe(true)
+    expect(isPathInside('/a.png', '/')).toBe(true)
+  })
+
+  it('should reject sibling folders that share the prefix', () => {
+    expect(isPathInside('/docs-secret/a.png', '/docs')).toBe(false)
+    expect(isPathInside('C:/docs-secret/a.png', 'C:/docs')).toBe(false)
+  })
+
+  it('should reject the directory itself and parents', () => {
+    expect(isPathInside('/docs', '/docs')).toBe(false)
+    expect(isPathInside('/etc/passwd', '/docs')).toBe(false)
+  })
+
+  it('should compare Windows paths case-insensitively', () => {
+    expect(isPathInside('c:/Docs/a.png', 'C:/docs')).toBe(true)
+    expect(isPathInside('//Server/share/a.png', '//server/share')).toBe(true)
+  })
+
+  it('should compare POSIX paths case-sensitively', () => {
+    expect(isPathInside('/Docs/a.png', '/docs')).toBe(false)
+  })
+})
+
+describe('isExternalHref', () => {
+  it('should accept http, https and mailto links', () => {
+    expect(isExternalHref('http://example.com')).toBe(true)
+    expect(isExternalHref('https://example.com')).toBe(true)
+    expect(isExternalHref('mailto:me@example.com')).toBe(true)
+  })
+
+  it('should reject anchors, relative links and other schemes', () => {
+    expect(isExternalHref('#section')).toBe(false)
+    expect(isExternalHref('other.md')).toBe(false)
+    expect(isExternalHref('tel:123')).toBe(false)
+    expect(isExternalHref('javascript:alert(1)')).toBe(false)
   })
 })
