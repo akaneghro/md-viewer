@@ -34,7 +34,7 @@ Get the latest installer for your system from the
 
 | Platform | File | Notes |
 | --- | --- | --- |
-| Windows 10/11 (x64) | `.msi` or `-setup.exe` | Either one works. The installer registers MD Viewer for `.md` files. |
+| Windows 10/11 (x64) | `-setup.exe` or `.msi` | Both register MD Viewer for `.md` files. `-setup.exe` also gives them a dedicated document icon; the `.msi` uses the app icon. |
 | macOS (Apple Silicon & Intel) | `_universal.dmg` | Open it and drag **MD Viewer** to Applications. |
 | Linux (x64) | `.AppImage`, `.deb` or `.rpm` | AppImage runs anywhere. Use `.deb` on Debian/Ubuntu and `.rpm` on Fedora/openSUSE. |
 
@@ -67,7 +67,7 @@ The builds are not code-signed yet, so your OS will warn you the first time:
 - **Syntax highlighting**: [Shiki](https://shiki.style) with GitHub's light and dark themes, for about 30 common languages.
 - **Table of contents**: built from the `h1`–`h3` headings. Click to jump; the current section is highlighted as you scroll.
 - **Dark mode**: follows your system on first launch, then remembers your choice.
-- **Recent files**: your last 10 documents, one click away. Files that no longer exist are removed from the list.
+- **Recent files**: your last 10 documents, one click away. A file that no longer exists is removed from the list when you click it.
 - **Open your way**: the **Open...** button, the File menu, drag & drop onto the window, or double-click a
   `.md` / `.markdown` / `.mdown` / `.mkd` file. Opening another file reuses the running window.
 - **Edit mode**: a side-by-side editor with live preview, **Save** and **Save As**, and a prompt before unsaved changes are discarded.

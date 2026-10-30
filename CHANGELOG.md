@@ -28,8 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced the deprecated Tauri shell plugin with the opener plugin for external links.
 - New app identifier `io.github.akaneghro.mdviewer`. Recent files and the theme
   choice from 0.1.0 are not carried over.
-- The Windows file association uses its own ProgID (`MDViewer.Markdown`), and
-  uninstalling removes its icon override.
+- The Windows `-setup.exe` (NSIS) installer registers `.md` files under its own ProgID
+  (`MDViewer.Markdown`) with a dedicated document icon, and uninstalling removes it.
+  The `.msi` uses the bundler's default ProgID and the app icon.
 
 ### Fixed
 
@@ -39,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Images whose names contain spaces or other encoded characters now load.
 - Opening another file while editing leaves edit mode, so stale edits can't be saved over it.
 - Relative launch arguments are resolved against the working directory.
+- Lists show their bullets and numbers.
+- On macOS the menu bar has the app and Edit menus, so copy, paste, cut, undo and
+  select all work in the editor.
+- Opening a file that can't be shown while editing (for example, one over 10 MB) now
+  shows the error instead of doing nothing.
 
 ### Security
 
@@ -49,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   image paths are blocked.
 - External links are limited to `http`, `https` and `mailto`, and all of them open outside
   the app (browser or mail client).
+- A code block's language tag can no longer inject HTML into the rendered document
+  (highlighting now runs on the sanitized tree).
+- Plain `http://` images are dropped by the renderer; remote images load over HTTPS only.
 - `withGlobalTauri` is disabled.
 
 ## [0.1.0] - 2026-02-08
