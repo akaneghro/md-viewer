@@ -17,9 +17,9 @@ A cross-platform desktop Markdown document viewer built with Tauri v2 and Nuxt 4
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22+
 - pnpm
-- Rust 1.87+
+- Rust 1.90+
 
 ## Development
 
@@ -60,13 +60,12 @@ markdown-viewer/
 │   ├── icons/              # App icons
 │   └── tauri.conf.json     # Tauri config
 ├── nuxt.config.ts          # Nuxt config
-├── tailwind.config.ts      # Tailwind config
 └── package.json
 ```
 
 ## Stack
 
-- **Frontend**: Nuxt 3 (SPA mode), Vue 3, Tailwind CSS, Pinia
+- **Frontend**: Nuxt 4 (SPA mode), Vue 3, Tailwind CSS 4, Pinia
 - **Backend**: Tauri v2 (Rust)
 - **Markdown**: unified, remark-gfm, rehype-sanitize, Shiki
 

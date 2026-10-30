@@ -65,7 +65,7 @@ renderMarkdownToHtml(markdown, fileDir): { html, toc }
 3. **Recent files**: Max 10, persisted in localStorage, with "Clear recents" option
 4. **TOC sidebar**: Extracted from h1-h3 headings with scroll-to-section
 5. **Relative images**: Resolved via Tauri's `convertFileSrc` relative to the file's directory
-6. **External links**: Opened in system browser via `shell.open`
+6. **External links**: Opened in system browser via the Tauri opener plugin (`openUrl`)
 7. **File watching** _(nice to have)_: Auto-refresh on disk changes, encapsulated behind a feature flag
 8. **Dark mode**: Light by default, toggle in top bar
 
@@ -73,7 +73,7 @@ renderMarkdownToHtml(markdown, fileDir): { html, toc }
 
 - **Always** sanitize markdown HTML output with rehype-sanitize
 - **Block** `javascript:` and other dangerous URI schemes in links
-- **Open** external links (`http`, `https`, `mailto`) with Tauri `shell.open`, never inside the WebView
+- **Open** external links (`http`, `https`, `mailto`) with the Tauri opener plugin (`openUrl`), never inside the WebView
 - **Never** allow raw/unsanitized HTML injection
 
 ## Build & Packaging
