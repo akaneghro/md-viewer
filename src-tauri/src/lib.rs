@@ -144,13 +144,45 @@ pub fn run() {
                 .accelerator("CmdOrCtrl+O")
                 .build(app)?;
 
-            let file_menu = SubmenuBuilder::new(app, "File")
-                .item(&open_item)
-                .separator()
-                .quit()
-                .build()?;
+            let menu = Menu::new(app)?;
+            let is_macos = cfg!(target_os = "macos");
 
-            let menu = Menu::with_items(app, &[&file_menu])?;
+            // macOS always shows the first submenu as the app menu, where Quit lives
+            if is_macos {
+                let app_menu = SubmenuBuilder::new(app, app.package_info().name.clone())
+                    .about(None)
+                    .separator()
+                    .services()
+                    .separator()
+                    .hide()
+                    .hide_others()
+                    .show_all()
+                    .separator()
+                    .quit()
+                    .build()?;
+                menu.append(&app_menu)?;
+            }
+
+            let mut file_menu = SubmenuBuilder::new(app, "File").item(&open_item);
+            if !is_macos {
+                file_menu = file_menu.separator().quit();
+            }
+            menu.append(&file_menu.build()?)?;
+
+            // The macOS webview only gets clipboard and undo shortcuts from these items
+            if is_macos {
+                let edit_menu = SubmenuBuilder::new(app, "Edit")
+                    .undo()
+                    .redo()
+                    .separator()
+                    .cut()
+                    .copy()
+                    .paste()
+                    .select_all()
+                    .build()?;
+                menu.append(&edit_menu)?;
+            }
+
             app.set_menu(menu)?;
 
             // Handle menu events
