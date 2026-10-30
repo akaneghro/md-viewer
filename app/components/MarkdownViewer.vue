@@ -125,6 +125,19 @@ function handleClick(event: MouseEvent) {
   padding-left: 2em;
 }
 
+/* Tailwind's preflight removes list markers */
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body ul ul {
+  list-style: circle;
+}
+
 .markdown-body li {
   margin-top: 0.25em;
 }
