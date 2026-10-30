@@ -9,10 +9,46 @@ permissions:
   contents: read
 
 jobs:
+  # One job creates the draft so the parallel builds don't each create their own
+  create-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          BODY: |
+            See [CHANGELOG.md](https://github.com/akaneghro/md-viewer/blob/main/CHANGELOG.md) for what's new.
+
+            The installers are not code-signed yet. See the [first launch notes](https://github.com/akaneghro/md-viewer#first-launch) if your OS warns you.
+        run: |
+          version=$(node -p "require('./package.json').version")
+          # Tag pushes release that tag; manual runs use the app version
+          if [ "$REF_TYPE" = tag ]; then tag="$REF_NAME"; else tag="v$version"; fi
+          id=$(gh api "repos/$GH_REPO/releases" --paginate --jq ".[] | select(.tag_name == \"$tag\") | .id" | head -n 1)
+          if [ -z "$id" ]; then
+            id=$(gh api -X POST "repos/$GH_REPO/releases" \
+              -f tag_name="$tag" -f target_commitish="$GITHUB_SHA" \
+              -f name="MD Viewer v$version" -f body="$BODY" -F draft=true --jq .id)
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build (${{ matrix.name }})
+    needs: create-release
     permissions:
-      # Create the draft release and upload the installers
+      # Upload the installers to the draft release
       contents: write
     strategy:
       fail-fast: false
@@ -63,13 +99,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Tag pushes release that tag; manual runs use the app version
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
-          releaseName: MD Viewer v__VERSION__
-          releaseBody: |
-            See [CHANGELOG.md](https://github.com/akaneghro/md-viewer/blob/main/CHANGELOG.md) for what's new.
-
-            The installers are not code-signed yet. See the [first launch notes](https://github.com/akaneghro/md-viewer#first-launch) if your OS warns you.
-          releaseDraft: true
-          prerelease: false
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
