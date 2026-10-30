@@ -4,9 +4,14 @@ import { reactive } from 'vue'
 import { useDocument } from '~/composables/useDocument'
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs'
 import { open, save } from '@tauri-apps/plugin-dialog'
+import { invoke } from '@tauri-apps/api/core'
 import { renderMarkdown } from '~/utils/markdown'
 
-// Mock Tauri plugins
+// Mock Tauri APIs and plugins
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: vi.fn(),
   save: vi.fn(),
@@ -269,35 +274,63 @@ describe('useDocument', () => {
     })
   })
 
-  // --- openWithContent ---
-  describe('openWithContent', () => {
-    it('should set path and content without reading file', async () => {
-      await doc.openWithContent('/cli-file.md', '# From CLI')
+  // --- File access (Rust allow_path command) ---
+  describe('file access', () => {
+    beforeEach(() => {
+      vi.mocked(stat).mockResolvedValue({ size: 100 } as unknown as Awaited<
+        ReturnType<typeof stat>
+      >)
+      vi.mocked(readTextFile).mockResolvedValue('content')
+    })
 
-      expect(doc.currentPath.value).toBe('/cli-file.md')
-      expect(doc.content.value).toBe('# From CLI')
+    it('should ask the backend to allow the path before reading it', async () => {
+      await doc.openPath('/docs/file.md')
+
+      expect(invoke).toHaveBeenCalledWith('allow_path', { path: '/docs/file.md' })
+      expect(vi.mocked(invoke).mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(readTextFile).mock.invocationCallOrder[0]!,
+      )
+    })
+
+    it('should not read the file when the backend refuses it', async () => {
+      vi.mocked(invoke).mockRejectedValueOnce('File not found: /gone.md')
+
+      await expect(doc.openPath('/gone.md')).rejects.toBe('File not found: /gone.md')
       expect(readTextFile).not.toHaveBeenCalled()
-      expect(mockAddRecent).toHaveBeenCalledWith('/cli-file.md')
+      expect(doc.error.value).toBe('Failed to open file: File not found: /gone.md')
+      expect(doc.currentPath.value).toBeNull()
+      expect(mockAddRecent).not.toHaveBeenCalled()
     })
 
-    it('should render the provided content', async () => {
-      await doc.openWithContent('/file.md', '# Test')
-
-      expect(renderMarkdown).toHaveBeenCalled()
-      expect(doc.html.value).toBe('<p>rendered</p>')
+    it('should allow the path of dropped files', async () => {
+      await doc.openDroppedFile('/dropped.md')
+      expect(invoke).toHaveBeenCalledWith('allow_path', { path: '/dropped.md' })
     })
 
-    it('should set isLoading to false after completion', async () => {
-      await doc.openWithContent('/file.md', 'content')
-      expect(doc.isLoading.value).toBe(false)
+    it('should allow the path picked in the open dialog', async () => {
+      vi.mocked(open).mockResolvedValue('/picked.md')
+      await doc.openWithDialog()
+      expect(invoke).toHaveBeenCalledWith('allow_path', { path: '/picked.md' })
     })
 
-    it('should handle render errors', async () => {
+    it('should report render errors', async () => {
       vi.mocked(renderMarkdown).mockRejectedValueOnce(new Error('render fail'))
 
-      await expect(doc.openWithContent('/file.md', 'bad')).rejects.toThrow()
-      expect(doc.error.value).toContain('Failed to render markdown')
+      await expect(doc.openPath('/file.md')).rejects.toThrow('render fail')
+      expect(doc.error.value).toContain('Failed to open file')
       expect(doc.isLoading.value).toBe(false)
+    })
+
+    it('should leave edit mode when another file is opened', async () => {
+      await doc.openPath('/first.md')
+      doc.startEditing()
+
+      vi.mocked(readTextFile).mockResolvedValue('second')
+      await doc.openPath('/second.md')
+
+      expect(doc.isEditing.value).toBe(false)
+      expect(doc.editContent.value).toBe('')
+      expect(doc.content.value).toBe('second')
     })
   })
 
@@ -502,9 +535,29 @@ describe('useDocument', () => {
       await doc.saveAs()
 
       expect(writeTextFile).toHaveBeenCalledWith('/new-path.md', 'new content')
+      expect(invoke).toHaveBeenCalledWith('allow_path', { path: '/new-path.md' })
       expect(doc.currentPath.value).toBe('/new-path.md')
       expect(doc.isDirty.value).toBe(false)
       expect(mockAddRecent).toHaveBeenCalledWith('/new-path.md')
+    })
+
+    it('should still save when the new path cannot be allowed for images', async () => {
+      vi.mocked(stat).mockResolvedValue({ size: 100 } as unknown as Awaited<
+        ReturnType<typeof stat>
+      >)
+      vi.mocked(readTextFile).mockResolvedValue('content')
+      vi.mocked(save).mockResolvedValue('/new-path.txt')
+      vi.mocked(writeTextFile).mockResolvedValue()
+
+      await doc.openPath('/file.md')
+      doc.startEditing()
+      doc.updateEditContent('new content')
+      vi.mocked(invoke).mockRejectedValueOnce('Only Markdown files can be opened')
+      await doc.saveAs()
+
+      expect(writeTextFile).toHaveBeenCalledWith('/new-path.txt', 'new content')
+      expect(doc.currentPath.value).toBe('/new-path.txt')
+      expect(doc.isDirty.value).toBe(false)
     })
 
     it('should do nothing if user cancels dialog', async () => {

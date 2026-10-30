@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { isExternalHref } from '~/utils/markdown'
 
 const document = useDocument()
 const containerRef = ref<HTMLElement | null>(null)
@@ -22,10 +23,10 @@ function handleClick(event: MouseEvent) {
   const href = anchor.getAttribute('href')
   if (!href) return
 
-  // Check if external link
-  if (anchor.dataset.external === 'true' || href.startsWith('http://') || href.startsWith('https://')) {
+  // External links (http, https, mailto) open in the system browser / mail client
+  if (isExternalHref(href)) {
     event.preventDefault()
-    openUrl(href)
+    openUrl(href).catch(error => console.error('Failed to open link:', error))
     return
   }
 

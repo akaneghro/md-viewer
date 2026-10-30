@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core'
 import { open, save } from '@tauri-apps/plugin-dialog'
 import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs'
 import { renderMarkdown, type TocItem } from '~/utils/markdown'
@@ -93,6 +94,14 @@ function initWatchers(colorMode: ReturnType<typeof useColorMode>) {
   })
 }
 
+/**
+ * Ask the backend to grant read/write access to a file the user chose, plus its
+ * directory for relative images. Rejects if it is not an existing markdown file.
+ */
+function allowPath(path: string): Promise<void> {
+  return invoke('allow_path', { path })
+}
+
 function clearEditTimeout() {
   if (editRenderTimeout) {
     clearTimeout(editRenderTimeout)
@@ -136,7 +145,9 @@ export function useDocument() {
     state.isLoading = true
 
     try {
-      // Check file size before reading (skip if stat fails due to scope restrictions)
+      await allowPath(path)
+
+      // Check file size before reading (skip if stat fails)
       try {
         const fileStat = await stat(path)
         if (fileStat.size > MAX_FILE_SIZE_BYTES) {
@@ -146,16 +157,19 @@ export function useDocument() {
         }
       }
       catch (statErr) {
-        // Re-throw file-too-large errors, but ignore stat permission/scope errors
+        // Re-throw file-too-large errors; otherwise let the read report the problem
         if (statErr instanceof Error && statErr.message === 'File too large') {
           throw statErr
         }
-        // stat() may fail due to fs:scope restrictions; proceed with read attempt
       }
 
       const content = await readTextFile(path)
       state.currentPath = path
       state.content = content
+      // Leave edit mode so the previous file's edits can't be saved over this one
+      state.isEditing = false
+      state.editContent = ''
+      state.isDirty = false
       recentsStore.addRecent(path)
       clearEditTimeout()
       await render()
@@ -179,27 +193,6 @@ export function useDocument() {
     }
 
     await openPath(path)
-  }
-
-  /** Open a file with pre-read content (e.g. from Rust CLI handler, bypasses fs scope) */
-  async function openWithContent(path: string, content: string) {
-    state.error = null
-    state.isLoading = true
-
-    try {
-      state.currentPath = path
-      state.content = content
-      recentsStore.addRecent(path)
-      clearEditTimeout()
-      await render()
-    }
-    catch (err) {
-      state.error = `Failed to render markdown: ${err}`
-      throw err
-    }
-    finally {
-      state.isLoading = false
-    }
   }
 
   function clear() {
@@ -259,7 +252,10 @@ export function useDocument() {
 
     if (!selected) return
 
+    // The save dialog already granted write access to the chosen file
     await writeTextFile(selected, state.editContent)
+    // Grant its directory for relative images; a non-markdown name keeps working without them
+    await allowPath(selected).catch(() => {})
     state.currentPath = selected
     state.content = state.editContent
     state.isDirty = false
@@ -296,7 +292,6 @@ export function useDocument() {
     // Actions
     openWithDialog,
     openPath,
-    openWithContent,
     openDroppedFile,
     clear,
     render,

@@ -88,19 +88,7 @@
       <main
         v-else
         class="flex-1 overflow-y-auto"
-        @dragover.prevent="onDragOver"
-        @dragleave="onDragLeave"
-        @drop.prevent="onDrop"
       >
-        <div
-          v-if="isDragging"
-          class="absolute inset-0 bg-primary-500/20 border-2 border-dashed border-primary-500 flex items-center justify-center z-10"
-        >
-          <p class="text-primary-600 dark:text-primary-400 text-lg font-medium">
-            Drop .md file here
-          </p>
-        </div>
-
         <div
           v-if="document.isLoading.value"
           class="flex items-center justify-center h-full"
@@ -165,6 +153,16 @@
       </main>
     </div>
 
+    <!-- Drop overlay (native drag & drop covers the whole window) -->
+    <div
+      v-if="isDragging"
+      class="fixed inset-0 bg-primary-500/20 border-2 border-dashed border-primary-500 flex items-center justify-center z-30 pointer-events-none"
+    >
+      <p class="text-primary-600 dark:text-primary-400 text-lg font-medium">
+        Drop .md file here
+      </p>
+    </div>
+
     <!-- Toast -->
     <Transition name="toast">
       <div
@@ -179,12 +177,11 @@
 </template>
 
 <script setup lang="ts">
-import { listen } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
-import { isValidMarkdownFile } from '~/utils/constants'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
 
 const document = useDocument()
-const isDragging = ref(false)
 const sidebarOpen = ref(true)
 const previewOpen = ref(true)
 
@@ -206,132 +203,107 @@ function showToast(message: string, type: 'info' | 'error' = 'info') {
 /** Expose showToast so child components can use it via provide/inject */
 provide('showToast', showToast)
 
-function onDragOver(_e: DragEvent) {
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-async function onDrop(e: DragEvent) {
-  isDragging.value = false
-
-  const files = e.dataTransfer?.files
-  if (!files || files.length === 0) return
-
-  const file = files[0]
-  const path = (file as unknown as { path?: string }).path
-
-  if (!path) {
-    showToast('Could not get file path', 'error')
-    return
+function handleOpenError(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message === 'User cancelled') return
+    // Shown in the error panel instead
+    if (error.message === 'File too large') return
   }
-
-  if (!isValidMarkdownFile(path)) {
-    showToast('Only .md files are supported', 'error')
-    return
-  }
-
-  if (!await document.confirmIfDirty()) return
-
-  try {
-    await document.openPath(path)
-  }
-  catch (error) {
-    if (error instanceof Error && error.message !== 'File too large') {
-      showToast(`Failed to open file: ${error}`, 'error')
-    }
-  }
-}
-
-async function handleOpenError(error: unknown) {
-  if (error instanceof Error && error.message === 'User cancelled') return
   showToast(`Failed to open file: ${error}`, 'error')
 }
 
-// Listen for menu events + check for CLI file argument
-onMounted(async () => {
-  // Check if a file was passed via CLI (e.g. double-click on .md file)
+/** Run an open action after the unsaved-changes check, reporting failures */
+async function openFile(open: () => Promise<void>) {
   try {
-    const initialFile = await invoke<{ path: string, content: string } | null>('get_initial_file')
-    if (initialFile) {
-      await document.openWithContent(initialFile.path, initialFile.content)
+    if (!await document.confirmIfDirty()) return
+    await open()
+  }
+  catch (error) {
+    handleOpenError(error)
+  }
+}
+
+const { isDragging, handleDragDrop } = useDragDrop({
+  onFile: path => openFile(() => document.openDroppedFile(path)),
+  onUnsupported: () => showToast('Only .md files are supported', 'error'),
+})
+
+const unlisteners: UnlistenFn[] = []
+
+// Keyboard shortcuts
+async function handleKeydown(e: KeyboardEvent) {
+  // Ctrl+O — Open file
+  if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+    e.preventDefault()
+    await openFile(document.openWithDialog)
+    return
+  }
+
+  // Ctrl+S — Save (edit mode only)
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {
+    if (document.isEditing.value) {
+      e.preventDefault()
+      try {
+        await document.saveFile()
+        showToast('File saved', 'info')
+      }
+      catch (error) {
+        showToast(`Failed to save: ${error}`, 'error')
+      }
+    }
+    return
+  }
+
+  // Ctrl+Shift+S — Save As (edit mode only)
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+    if (document.isEditing.value) {
+      e.preventDefault()
+      try {
+        await document.saveAs()
+        showToast('File saved', 'info')
+      }
+      catch (error) {
+        if (error instanceof Error && error.message !== 'User cancelled') {
+          showToast(`Failed to save: ${error}`, 'error')
+        }
+      }
+    }
+    return
+  }
+
+  // Escape — Stop editing
+  if (e.key === 'Escape' && document.isEditing.value) {
+    e.preventDefault()
+    await document.stopEditing()
+  }
+}
+
+onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
+
+  unlisteners.push(
+    await listen('menu-open-file', () => openFile(document.openWithDialog)),
+    // Files the OS asks the running instance to open (second launch, macOS "Open With")
+    await listen<string>('open-file', event => openFile(() => document.openPath(event.payload))),
+    await getCurrentWebview().onDragDropEvent(event => handleDragDrop(event.payload)),
+  )
+
+  // Check if a file was passed on launch (e.g. double-click on .md file).
+  // Asked after subscribing to 'open-file' so no request is lost in between.
+  try {
+    const initialPath = await invoke<string | null>('get_initial_file')
+    if (initialPath) {
+      await openFile(() => document.openPath(initialPath))
     }
   }
   catch (error) {
     handleOpenError(error)
   }
+})
 
-  const unlisten = await listen('menu-open-file', async () => {
-    try {
-      if (!await document.confirmIfDirty()) return
-      await document.openWithDialog()
-    }
-    catch (error) {
-      handleOpenError(error)
-    }
-  })
-
-  // Keyboard shortcuts
-  const handleKeydown = async (e: KeyboardEvent) => {
-    // Ctrl+O — Open file
-    if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-      e.preventDefault()
-      try {
-        if (!await document.confirmIfDirty()) return
-        await document.openWithDialog()
-      }
-      catch (error) {
-        handleOpenError(error)
-      }
-      return
-    }
-
-    // Ctrl+S — Save (edit mode only)
-    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 's') {
-      if (document.isEditing.value) {
-        e.preventDefault()
-        try {
-          await document.saveFile()
-          showToast('File saved', 'info')
-        }
-        catch (error) {
-          showToast(`Failed to save: ${error}`, 'error')
-        }
-      }
-      return
-    }
-
-    // Ctrl+Shift+S — Save As (edit mode only)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
-      if (document.isEditing.value) {
-        e.preventDefault()
-        try {
-          await document.saveAs()
-          showToast('File saved', 'info')
-        }
-        catch (error) {
-          if (error instanceof Error && error.message !== 'User cancelled') {
-            showToast(`Failed to save: ${error}`, 'error')
-          }
-        }
-      }
-      return
-    }
-
-    // Escape — Stop editing
-    if (e.key === 'Escape' && document.isEditing.value) {
-      e.preventDefault()
-      await document.stopEditing()
-    }
-  }
-  window.addEventListener('keydown', handleKeydown)
-
-  onUnmounted(() => {
-    unlisten()
-    window.removeEventListener('keydown', handleKeydown)
-  })
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+  unlisteners.forEach(unlisten => unlisten())
 })
 </script>
 
