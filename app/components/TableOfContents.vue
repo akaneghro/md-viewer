@@ -90,9 +90,10 @@ function cleanupScrollSpy() {
   }
 }
 
-// Re-setup scroll spy when TOC changes (new document loaded)
+// Re-setup scroll spy when TOC changes (new document loaded). Opening a file sets
+// the TOC while the loading spinner still hides the headings, so wait for it too.
 watch(
-  () => document.toc.value,
+  () => [document.toc.value, document.isLoading.value],
   () => {
     nextTick(() => setupScrollSpy())
   },
