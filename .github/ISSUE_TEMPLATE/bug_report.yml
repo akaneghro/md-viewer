@@ -1,0 +1,73 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search [existing issues](https://github.com/akaneghro/md-viewer/issues) first.
+        For security problems, see [SECURITY.md](https://github.com/akaneghro/md-viewer/blob/main/SECURITY.md) instead.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a file with...
+        2. Click...
+        3. See...
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample Markdown
+      description: If the problem is about rendering, paste a minimal snippet that triggers it.
+      render: markdown
+  - type: input
+    id: version
+    attributes:
+      label: MD Viewer version
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: Windows 11 24H2, macOS 15.1, Ubuntu 24.04...
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Installed from
+      options:
+        - Windows .msi
+        - Windows .exe (setup)
+        - macOS .dmg
+        - Linux .AppImage
+        - Linux .deb
+        - Linux .rpm
+        - Built from source
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Anything else that helps, such as screenshots or error messages.
