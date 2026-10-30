@@ -2,13 +2,14 @@
   <article
     ref="containerRef"
     class="markdown-body p-8 max-w-4xl mx-auto"
-    v-html="document.html.value"
     @click="handleClick"
+    v-html="document.html.value"
   />
 </template>
 
 <script setup lang="ts">
-import { open } from '@tauri-apps/plugin-shell'
+import { openUrl } from '@tauri-apps/plugin-opener'
+import { isExternalHref } from '~/utils/markdown'
 
 const document = useDocument()
 const containerRef = ref<HTMLElement | null>(null)
@@ -22,10 +23,10 @@ function handleClick(event: MouseEvent) {
   const href = anchor.getAttribute('href')
   if (!href) return
 
-  // Check if external link
-  if (anchor.dataset.external === 'true' || href.startsWith('http://') || href.startsWith('https://')) {
+  // External links (http, https, mailto) open in the system browser / mail client
+  if (isExternalHref(href)) {
     event.preventDefault()
-    open(href)
+    openUrl(href).catch(error => console.error('Failed to open link:', error))
     return
   }
 
@@ -122,6 +123,19 @@ function handleClick(event: MouseEvent) {
   margin-top: 0;
   margin-bottom: 16px;
   padding-left: 2em;
+}
+
+/* Tailwind's preflight removes list markers */
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body ul ul {
+  list-style: circle;
 }
 
 .markdown-body li {

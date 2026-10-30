@@ -1,49 +1,49 @@
-import { defineConfig } from "vitest/config";
-import { resolve } from "path";
-import AutoImport from "unplugin-auto-import/vite";
+import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url'
+import AutoImport from 'unplugin-auto-import/vite'
 
 export default defineConfig({
   plugins: [
     AutoImport({
       imports: [
-        "vue",
+        'vue',
         {
-          "~/composables/useColorMode": ["useColorMode"],
-          "~/composables/useDocument": ["useDocument"],
+          '~/composables/useColorMode': ['useColorMode'],
+          '~/composables/useDocument': ['useDocument'],
         },
       ],
       dts: false,
     }),
     {
-      name: "nuxt-import-meta",
-      enforce: "pre",
+      name: 'nuxt-import-meta',
+      enforce: 'pre',
       transform(code: string, id: string) {
-        if (id.includes("node_modules")) return null;
+        if (id.includes('node_modules')) return null
         const transformed = code
-          .replaceAll("import.meta.client", "(true)")
-          .replaceAll("import.meta.server", "(false)");
-        return transformed !== code ? transformed : null;
+          .replaceAll('import.meta.client', '(true)')
+          .replaceAll('import.meta.server', '(false)')
+        return transformed !== code ? transformed : null
       },
     },
   ],
   resolve: {
     alias: {
-      "~": resolve(__dirname, "app"),
+      '~': fileURLToPath(new URL('./app', import.meta.url)),
     },
   },
   test: {
-    environment: "happy-dom",
+    environment: 'happy-dom',
     globals: true,
-    include: ["app/**/__tests__/**/*.test.ts"],
+    include: ['app/**/__tests__/**/*.test.ts'],
     coverage: {
-      provider: "v8",
-      reporter: ["text", "text-summary"],
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
       include: [
-        "app/utils/**/*.ts",
-        "app/composables/**/*.ts",
-        "app/stores/**/*.ts",
+        'app/utils/**/*.ts',
+        'app/composables/**/*.ts',
+        'app/stores/**/*.ts',
       ],
-      exclude: ["**/__tests__/**", "**/*.d.ts"],
+      exclude: ['**/__tests__/**', '**/*.d.ts'],
       thresholds: {
         lines: 80,
         functions: 80,
@@ -52,4 +52,4 @@ export default defineConfig({
       },
     },
   },
-});
+})

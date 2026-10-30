@@ -2,7 +2,7 @@
   <div class="h-full flex flex-col overflow-hidden">
     <textarea
       ref="textareaRef"
-      class="flex-1 w-full resize-none p-8 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm leading-relaxed outline-none border-none"
+      class="flex-1 w-full resize-none p-8 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm leading-relaxed outline-hidden border-none"
       :value="document.editContent.value"
       spellcheck="false"
       @input="onInput"

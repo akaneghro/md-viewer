@@ -1,5 +1,8 @@
 <template>
-  <div v-if="document.toc.value.length > 0" class="p-3">
+  <div
+    v-if="document.toc.value.length > 0"
+    class="p-3"
+  >
     <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
       Table of Contents
     </h2>
@@ -13,7 +16,7 @@
         >
           <a
             :href="`#${item.id}`"
-            class="block px-2 py-1 text-sm rounded truncate transition-colors"
+            class="block px-2 py-1 text-sm rounded-sm truncate transition-colors"
             :class="[
               activeHeadingId === item.id
                 ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium'
@@ -53,7 +56,7 @@ function setupScrollSpy() {
   if (document.toc.value.length === 0) return
 
   const headingElements = document.toc.value
-    .map((item) => window.document.getElementById(item.id))
+    .map(item => window.document.getElementById(item.id))
     .filter((el): el is HTMLElement => el !== null)
 
   if (headingElements.length === 0) return
@@ -62,10 +65,10 @@ function setupScrollSpy() {
     (entries) => {
       // Find the topmost visible heading
       const visible = entries
-        .filter((entry) => entry.isIntersecting)
+        .filter(entry => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
-      if (visible.length > 0) {
+      if (visible[0]) {
         activeHeadingId.value = visible[0].target.id
       }
     },
@@ -87,9 +90,10 @@ function cleanupScrollSpy() {
   }
 }
 
-// Re-setup scroll spy when TOC changes (new document loaded)
+// Re-setup scroll spy when TOC changes (new document loaded). Opening a file sets
+// the TOC while the loading spinner still hides the headings, so wait for it too.
 watch(
-  () => document.toc.value,
+  () => [document.toc.value, document.isLoading.value],
   () => {
     nextTick(() => setupScrollSpy())
   },

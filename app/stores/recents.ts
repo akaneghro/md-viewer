@@ -14,7 +14,7 @@ export const useRecentsStore = defineStore('recents', {
   }),
 
   getters: {
-    recentFiles: (state) => state.files,
+    recentFiles: state => state.files,
   },
 
   actions: {
@@ -23,7 +23,7 @@ export const useRecentsStore = defineStore('recents', {
       const name = path.split(/[/\\]/).pop() || path
 
       // Remove if already exists
-      this.files = this.files.filter((f) => f.path !== path)
+      this.files = this.files.filter(f => f.path !== path)
 
       // Add to beginning
       this.files.unshift({
@@ -39,7 +39,7 @@ export const useRecentsStore = defineStore('recents', {
     },
 
     removeRecent(path: string) {
-      this.files = this.files.filter((f) => f.path !== path)
+      this.files = this.files.filter(f => f.path !== path)
     },
 
     clearRecents() {

@@ -1,1 +1,6 @@
-onlyBuiltDependencies: esbuild @parcel/watcher vue-demi
+onlyBuiltDependencies:
+  - esbuild
+  - '@parcel/watcher'
+  - vue-demi
+  - '@tailwindcss/oxide'
+  - unrs-resolver
