@@ -86,7 +86,8 @@ function initWatchers(colorMode: ReturnType<typeof useColorMode>) {
           state.toc = result.toc
         }
       })
-    } else if (state.content) {
+    }
+    else if (state.content) {
       render()
     }
   })
@@ -143,7 +144,8 @@ export function useDocument() {
           state.error = `File is too large (${sizeMB} MB). Maximum supported size is ${MAX_FILE_SIZE_MB} MB.`
           throw new Error('File too large')
         }
-      } catch (statErr) {
+      }
+      catch (statErr) {
         // Re-throw file-too-large errors, but ignore stat permission/scope errors
         if (statErr instanceof Error && statErr.message === 'File too large') {
           throw statErr
@@ -157,12 +159,14 @@ export function useDocument() {
       recentsStore.addRecent(path)
       clearEditTimeout()
       await render()
-    } catch (err) {
+    }
+    catch (err) {
       if (!(err instanceof Error && err.message === 'File too large')) {
         state.error = `Failed to open file: ${err}`
       }
       throw err
-    } finally {
+    }
+    finally {
       state.isLoading = false
     }
   }
@@ -188,10 +192,12 @@ export function useDocument() {
       recentsStore.addRecent(path)
       clearEditTimeout()
       await render()
-    } catch (err) {
+    }
+    catch (err) {
       state.error = `Failed to render markdown: ${err}`
       throw err
-    } finally {
+    }
+    finally {
       state.isLoading = false
     }
   }

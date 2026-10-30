@@ -22,8 +22,19 @@
         :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
         @click="sidebarOpen = !sidebarOpen"
       >
-        <svg class="w-4 h-4 text-gray-500 transition-transform" :class="{ 'rotate-180': !sidebarOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        <svg
+          class="w-4 h-4 text-gray-500 transition-transform"
+          :class="{ 'rotate-180': !sidebarOpen }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
       </button>
 
@@ -42,8 +53,19 @@
           :title="previewOpen ? 'Hide preview' : 'Show preview'"
           @click="previewOpen = !previewOpen"
         >
-          <svg class="w-4 h-4 text-gray-500 transition-transform" :class="{ 'rotate-180': !previewOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          <svg
+            class="w-4 h-4 text-gray-500 transition-transform"
+            :class="{ 'rotate-180': !previewOpen }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
 
@@ -53,7 +75,10 @@
           class="w-1/2 overflow-y-auto shrink-0"
         >
           <MarkdownViewer v-if="document.html.value" />
-          <div v-else class="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div
+            v-else
+            class="flex items-center justify-center h-full text-gray-400 text-sm"
+          >
             Start typing to see preview...
           </div>
         </div>
@@ -76,29 +101,66 @@
           </p>
         </div>
 
-        <div v-if="document.isLoading.value" class="flex items-center justify-center h-full">
+        <div
+          v-if="document.isLoading.value"
+          class="flex items-center justify-center h-full"
+        >
           <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent" />
         </div>
 
-        <div v-else-if="document.error.value" class="flex flex-col items-center justify-center h-full text-red-500 dark:text-red-400 px-8">
-          <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div
+          v-else-if="document.error.value"
+          class="flex flex-col items-center justify-center h-full text-red-500 dark:text-red-400 px-8"
+        >
+          <svg
+            class="w-12 h-12 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
-          <p class="text-lg font-medium">Error</p>
-          <p class="text-sm mt-2 text-center">{{ document.error.value }}</p>
+          <p class="text-lg font-medium">
+            Error
+          </p>
+          <p class="text-sm mt-2 text-center">
+            {{ document.error.value }}
+          </p>
         </div>
 
         <MarkdownViewer v-else-if="document.html.value" />
 
-        <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
-          <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <div
+          v-else
+          class="flex flex-col items-center justify-center h-full text-gray-400"
+        >
+          <svg
+            class="w-16 h-16 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
-          <p class="text-lg">No document open</p>
+          <p class="text-lg">
+            No document open
+          </p>
           <p class="text-sm mt-2">
             Press <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-sm">Ctrl+O</kbd> to open a file
           </p>
-          <p class="text-sm mt-1">or drag & drop a .md file</p>
+          <p class="text-sm mt-1">
+            or drag & drop a .md file
+          </p>
         </div>
       </main>
     </div>
@@ -175,7 +237,8 @@ async function onDrop(e: DragEvent) {
 
   try {
     await document.openPath(path)
-  } catch (error) {
+  }
+  catch (error) {
     if (error instanceof Error && error.message !== 'File too large') {
       showToast(`Failed to open file: ${error}`, 'error')
     }
@@ -191,11 +254,12 @@ async function handleOpenError(error: unknown) {
 onMounted(async () => {
   // Check if a file was passed via CLI (e.g. double-click on .md file)
   try {
-    const initialFile = await invoke<{ path: string; content: string } | null>('get_initial_file')
+    const initialFile = await invoke<{ path: string, content: string } | null>('get_initial_file')
     if (initialFile) {
       await document.openWithContent(initialFile.path, initialFile.content)
     }
-  } catch (error) {
+  }
+  catch (error) {
     handleOpenError(error)
   }
 
@@ -203,7 +267,8 @@ onMounted(async () => {
     try {
       if (!await document.confirmIfDirty()) return
       await document.openWithDialog()
-    } catch (error) {
+    }
+    catch (error) {
       handleOpenError(error)
     }
   })
@@ -216,7 +281,8 @@ onMounted(async () => {
       try {
         if (!await document.confirmIfDirty()) return
         await document.openWithDialog()
-      } catch (error) {
+      }
+      catch (error) {
         handleOpenError(error)
       }
       return
@@ -229,7 +295,8 @@ onMounted(async () => {
         try {
           await document.saveFile()
           showToast('File saved', 'info')
-        } catch (error) {
+        }
+        catch (error) {
           showToast(`Failed to save: ${error}`, 'error')
         }
       }
@@ -243,7 +310,8 @@ onMounted(async () => {
         try {
           await document.saveAs()
           showToast('File saved', 'info')
-        } catch (error) {
+        }
+        catch (error) {
           if (error instanceof Error && error.message !== 'User cancelled') {
             showToast(`Failed to save: ${error}`, 'error')
           }

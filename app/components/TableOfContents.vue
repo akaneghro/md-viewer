@@ -1,5 +1,8 @@
 <template>
-  <div v-if="document.toc.value.length > 0" class="p-3">
+  <div
+    v-if="document.toc.value.length > 0"
+    class="p-3"
+  >
     <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
       Table of Contents
     </h2>
@@ -53,7 +56,7 @@ function setupScrollSpy() {
   if (document.toc.value.length === 0) return
 
   const headingElements = document.toc.value
-    .map((item) => window.document.getElementById(item.id))
+    .map(item => window.document.getElementById(item.id))
     .filter((el): el is HTMLElement => el !== null)
 
   if (headingElements.length === 0) return
@@ -62,7 +65,7 @@ function setupScrollSpy() {
     (entries) => {
       // Find the topmost visible heading
       const visible = entries
-        .filter((entry) => entry.isIntersecting)
+        .filter(entry => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
       if (visible[0]) {

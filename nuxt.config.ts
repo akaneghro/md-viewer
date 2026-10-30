@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
 
   modules: [
+    '@nuxt/eslint',
     '@pinia/nuxt',
   ],
 
@@ -35,5 +36,11 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
     typeCheck: false,
+  },
+
+  eslint: {
+    config: {
+      stylistic: true,
+    },
   },
 })

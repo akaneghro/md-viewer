@@ -2,8 +2,8 @@
   <article
     ref="containerRef"
     class="markdown-body p-8 max-w-4xl mx-auto"
-    v-html="document.html.value"
     @click="handleClick"
+    v-html="document.html.value"
   />
 </template>
 
