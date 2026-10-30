@@ -13,7 +13,7 @@
         >
           <a
             :href="`#${item.id}`"
-            class="block px-2 py-1 text-sm rounded truncate transition-colors"
+            class="block px-2 py-1 text-sm rounded-sm truncate transition-colors"
             :class="[
               activeHeadingId === item.id
                 ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium'
@@ -65,7 +65,7 @@ function setupScrollSpy() {
         .filter((entry) => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
-      if (visible.length > 0) {
+      if (visible[0]) {
         activeHeadingId.value = visible[0].target.id
       }
     },

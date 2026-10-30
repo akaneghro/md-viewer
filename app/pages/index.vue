@@ -8,9 +8,9 @@
       <!-- Sidebar (hidden during editing) -->
       <aside
         v-show="sidebarOpen && !document.isEditing.value"
-        class="w-64 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden flex-shrink-0 sidebar"
+        class="w-64 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden shrink-0 sidebar"
       >
-        <RecentFiles class="flex-shrink-0" />
+        <RecentFiles class="shrink-0" />
         <TableOfContents class="flex-1 overflow-y-auto" />
       </aside>
 
@@ -50,7 +50,7 @@
         <!-- Preview Panel -->
         <div
           v-show="previewOpen"
-          class="w-1/2 overflow-y-auto flex-shrink-0"
+          class="w-1/2 overflow-y-auto shrink-0"
         >
           <MarkdownViewer v-if="document.html.value" />
           <div v-else class="flex items-center justify-center h-full text-gray-400 text-sm">
@@ -96,7 +96,7 @@
           </svg>
           <p class="text-lg">No document open</p>
           <p class="text-sm mt-2">
-            Press <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">Ctrl+O</kbd> to open a file
+            Press <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-sm">Ctrl+O</kbd> to open a file
           </p>
           <p class="text-sm mt-1">or drag & drop a .md file</p>
         </div>

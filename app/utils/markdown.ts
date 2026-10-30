@@ -72,7 +72,7 @@ function rehypeHeadingIds(toc: TocItem[]): Plugin<[], Root> {
     visit(tree, "element", (node: Element) => {
       const match = node.tagName.match(/^h([1-6])$/);
       if (match) {
-        const level = parseInt(match[1], 10);
+        const level = parseInt(match[1]!, 10);
         if (level <= 3) {
           const title = extractText(node);
           let id = slugify(title) || `heading-${usedIds.size}`;
@@ -263,7 +263,7 @@ async function highlightCodeBlocks(
     matches.push({
       full: match[0],
       lang: match[1] || "text",
-      code: match[2],
+      code: match[2]!,
     });
   }
 

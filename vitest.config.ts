@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { resolve } from "path";
+import { fileURLToPath } from "node:url";
 import AutoImport from "unplugin-auto-import/vite";
 
 export default defineConfig({
@@ -28,7 +28,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "~": resolve(__dirname, "app"),
+      "~": fileURLToPath(new URL("./app", import.meta.url)),
     },
   },
   test: {

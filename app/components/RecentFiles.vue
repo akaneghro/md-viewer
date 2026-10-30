@@ -37,16 +37,16 @@
         class="group"
       >
         <button
-          class="w-full text-left px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm truncate flex items-center gap-2 transition-colors"
+          class="w-full text-left px-2 py-1.5 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-sm truncate flex items-center gap-2 transition-colors"
           :class="{ 'bg-primary-50 dark:bg-primary-900/20': file.path === document.currentPath.value }"
           :title="file.path"
           @click="handleOpen(file.path)"
         >
-          <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <span class="truncate">{{ file.name }}</span>
-          <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{{ parentFolder(file.path) }}</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">{{ parentFolder(file.path) }}</span>
         </button>
       </li>
     </ul>
@@ -64,7 +64,7 @@ const showToast = inject<(message: string, type: 'info' | 'error') => void>('sho
 
 function parentFolder(path: string): string {
   const parts = path.split(/[/\\]/).filter(Boolean)
-  return parts.length >= 2 ? parts[parts.length - 2] : ''
+  return parts[parts.length - 2] ?? ''
 }
 
 async function handleOpen(path: string) {

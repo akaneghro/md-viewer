@@ -40,7 +40,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![get_initial_file])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Build native menu
             let open_item = MenuItemBuilder::new("Open...")

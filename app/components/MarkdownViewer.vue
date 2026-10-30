@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { open } from '@tauri-apps/plugin-shell'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 const document = useDocument()
 const containerRef = ref<HTMLElement | null>(null)
@@ -25,7 +25,7 @@ function handleClick(event: MouseEvent) {
   // Check if external link
   if (anchor.dataset.external === 'true' || href.startsWith('http://') || href.startsWith('https://')) {
     event.preventDefault()
-    open(href)
+    openUrl(href)
     return
   }
 

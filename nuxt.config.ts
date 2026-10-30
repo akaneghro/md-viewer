@@ -1,27 +1,18 @@
+import tailwindcss from '@tailwindcss/vite'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2024-11-01',
-  devtools: { enabled: false },
-
-  // SPA mode for Tauri
-  ssr: false,
 
   modules: [
-    '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
   ],
 
-  // App directory structure
-  srcDir: 'app/',
+  // SPA mode for Tauri
+  ssr: false,
+  devtools: { enabled: false },
 
-  // Vite configuration for Tauri
-  vite: {
-    clearScreen: false,
-    server: {
-      strictPort: true,
-    },
-    envPrefix: ['VITE_', 'TAURI_'],
-  },
+  css: ['~/assets/css/main.css'],
+  compatibilityDate: '2026-10-01',
 
   // Nitro configuration for static generation
   nitro: {
@@ -31,8 +22,18 @@ export default defineNuxtConfig({
     },
   },
 
-  // TypeScript
+  // Vite configuration for Tauri
+  vite: {
+    plugins: [tailwindcss()],
+    clearScreen: false,
+    server: {
+      strictPort: true,
+    },
+    envPrefix: ['VITE_', 'TAURI_'],
+  },
+
   typescript: {
     strict: true,
+    typeCheck: false,
   },
 })

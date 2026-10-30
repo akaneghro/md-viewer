@@ -100,27 +100,27 @@ describe("renderMarkdown", () => {
       const md = "# Title\n# Title\n# Title";
       const result = await renderMarkdown(md);
       expect(result.toc).toHaveLength(3);
-      expect(result.toc[0].id).toBe("title");
-      expect(result.toc[1].id).toBe("title-1");
-      expect(result.toc[2].id).toBe("title-2");
+      expect(result.toc[0]!.id).toBe("title");
+      expect(result.toc[1]!.id).toBe("title-1");
+      expect(result.toc[2]!.id).toBe("title-2");
     });
 
     it("should slugify special characters in headings", async () => {
       const result = await renderMarkdown("# Hello & World!");
-      expect(result.toc[0].id).toMatch(/^hello/);
+      expect(result.toc[0]!.id).toMatch(/^hello/);
     });
 
     it("should generate fallback ID for empty heading text", async () => {
       // Heading with only special chars that get stripped
       const result = await renderMarkdown("# $$$$");
       if (result.toc.length > 0) {
-        expect(result.toc[0].id).toMatch(/heading-/);
+        expect(result.toc[0]!.id).toMatch(/heading-/);
       }
     });
 
     it("should extract text from headings with inline formatting", async () => {
       const result = await renderMarkdown("# Hello **bold** world");
-      expect(result.toc[0].title).toBe("Hello bold world");
+      expect(result.toc[0]!.title).toBe("Hello bold world");
     });
   });
 

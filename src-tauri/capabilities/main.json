@@ -23,7 +23,6 @@
       ]
     },
     "fs:allow-stat",
-    "shell:default",
-    "shell:allow-open"
+    "opener:default"
   ]
 }
