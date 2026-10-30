@@ -1,8 +1,11 @@
 [package]
 name = "md-viewer"
-version = "0.1.0"
-description = "A Markdown document viewer"
-authors = ["you"]
+version = "0.2.0"
+description = "A fast, minimal desktop Markdown viewer and editor"
+authors = ["Alberto Alonso"]
+license = "MIT"
+repository = "https://github.com/akaneghro/md-viewer"
+homepage = "https://github.com/akaneghro/md-viewer"
 edition = "2021"
 rust-version = "1.90"
 

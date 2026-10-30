@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MD Viewer",
-  "version": "0.1.0",
-  "identifier": "com.md.desk.viewer",
+  "version": "0.2.0",
+  "identifier": "io.github.akaneghro.mdviewer",
   "build": {
     "beforeDevCommand": "pnpm nuxt:dev",
     "devUrl": "http://localhost:3000",
@@ -31,6 +31,13 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "Alberto Alonso",
+    "copyright": "© 2026 Alberto Alonso",
+    "license": "MIT",
+    "homepage": "https://github.com/akaneghro/md-viewer",
+    "category": "Productivity",
+    "shortDescription": "A fast, minimal Markdown viewer and editor",
+    "longDescription": "MD Viewer is a lightweight desktop app to read and edit Markdown documents, with GitHub Flavored Markdown, syntax highlighting, a table of contents, dark mode and safe rendering.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,7 +52,7 @@
     "fileAssociations": [
       {
         "ext": ["md", "markdown", "mdown", "mkd"],
-        "name": "Markdown",
+        "name": "MDViewer.Markdown",
         "mimeType": "text/markdown",
         "description": "Markdown Document",
         "role": "Viewer"
